@@ -1,5 +1,9 @@
 # macOS 快捷指令：从 Finder 上传到 CloudFlare ImgBed
 
+演示视频：
+
+https://github.com/user-attachments/assets/e6ea822c-410d-4d46-8ba8-1369fa812a3a
+
 这是一份社区教程：用 macOS 自带的 **Shortcuts（快捷指令）** 调用一个 Python 脚本，选中文件后即可上传，返回的链接自动进入剪贴板。无需安装大型图床客户端，也没有第三方 Python 依赖。上传是主要用途；浏览最近文件、下载和随机图是可选扩展。
 
 同一条快捷指令可以放进 Finder 的 **Quick Actions（快速操作）**、菜单栏，或绑定快捷键；也可以直接在终端、自己的 shell 脚本中调用。本文提供配置步骤和 [upload.py](upload.py)，不提供预制 `.shortcut` 文件。
@@ -37,9 +41,6 @@
 这会把 Token 存入默认钥匙串，service 默认为 `imgbed`，account 固定为 `api-token`；`-U` 可更新已有项。交互提示方式可避免 Token 出现在 shell 历史和命令行参数里，参见 [Apple 的 security 工具源码说明](https://github.com/apple-oss-distributions/Security/blob/main/SecurityTool/macOS/security.c)。不要将 Token 写进快捷指令、环境变量、脚本常量或截图，也不要启用 `set -x` 调试。
 
 多站点可在保存命令前设置 `IMGBED_KEYCHAIN_SERVICE`，并在对应的每条快捷指令中设置同样的值。service 只是本地条目的标识，不能代替站点地址。建议根据用途和有效期分别创建 Token。
-
-<!-- TODO: 添加已去除域名、账号及 Token 的截图。 -->
-![TODO：API Token 创建界面，只展示 upload 权限](images/token-settings.png)
 
 ## 2. 安装脚本并配置地址
 
@@ -103,9 +104,6 @@ python3 "$HOME/bin/imgbed/upload.py" upload "$@"
 
 在 Finder 中选择一张小图片，右键 → **Quick Actions（快速操作）** → “上传到 ImgBed”。成功后，脚本将链接输出到快捷指令结果，并通过 `pbcopy` 复制到剪贴板；多个文件的链接每行一条。通知只是提示，通知权限被关闭不影响上传结果。
 
-<!-- TODO: 在 Mac 上实测后添加上传快捷指令截图；当前没有实拍图片。 -->
-![TODO：接收 Finder 文件和文件夹，运行 Shell 脚本并作为参数传入](images/upload-shortcut.png)
-
 ### 文件夹如何处理
 
 选择 `相册` 文件夹，其中有 `旅行/海边.png`，脚本会提交 `uploadFolder=相册/旅行` 和原始文件名 `海边.png`。直接选择一个文件则上传到根目录。对所选项目本身和递归遇到的后代，跳过点号隐藏项目、macOS 隐藏标记项目、符号链接及非普通文件；空文件夹不会上传。同一次调用中重复的文件路径只处理一次，重叠选择以先遇到的路径结构为准。
@@ -146,9 +144,6 @@ python3 "$HOME/bin/imgbed/upload.py" clipboard
 
 脚本通过 JXA/AppKit 读取剪贴板 PNG；必要时将 AppKit 可识别的图片转为 PNG，写入临时目录，再上传为 `clipboard.png`。不是网页截图工具，也不会下载剪贴板里的 URL。浏览器、图片格式和剪贴板表示的兼容性仍需在目标 Mac 上确认；没有可读取图片时会明确报错。
 
-<!-- TODO: 添加剪贴板上传快捷指令截图。 -->
-![TODO：无输入的剪贴板图片上传快捷指令](images/clipboard-shortcut.png)
-
 ## 5. 可选：最近文件 → 下载或复制链接
 
 需要具有 `list` 权限的 Token。新建快捷指令，输入设为 **Nothing（无输入）**，Shell 为 `/bin/zsh`，**Pass Input → to stdin（到标准输入）**：
@@ -181,9 +176,6 @@ python3 "$HOME/bin/imgbed/upload.py" list --first --action download --destinatio
 
 普通文件读取通常无需 Token，但仍受站点访问规则限制；脚本不会把管理 Token 转发到文件下载或其重定向目标。具有 `list` 权限不代表能下载所有文件，见[官方读取 API](https://cfbed.sanyue.de/api/file.html)。
 
-<!-- TODO: 添加列表快捷指令和选择文件对话框截图。 -->
-![TODO：最近文件列表；第二个列表依次为下载到指定文件夹、复制链接，默认选择第一项](images/list-shortcut.png)
-
 ## 6. 可选：随机图链接
 
 管理员先在图床后台的系统设置中开启随机图功能并配置允许目录；具体开关位置以部署版本为准。此接口源码没有 Token 校验，脚本**不会读取钥匙串，也不会发送 Authorization**。这是对随机图接口鉴权的核对结论，不是漏配权限。参见[官方 API 概览](https://cfbed.sanyue.de/api/)和[随机图中间件](https://github.com/MarSeventh/CloudFlare-ImgBed/blob/85636c5bc7393e80e0fe229a8f73538ad5c65ee4/functions/random/_middleware.js)。
@@ -198,9 +190,6 @@ python3 "$HOME/bin/imgbed/upload.py" random
 ```
 
 脚本调用 `/random?type=url&form=text`，校验结果是 URL 后输出并复制。若关闭功能或当前目录不在允许范围，可能返回 403；没有匹配图片时，当前源码即使请求文本也会返回 `{}`，脚本会提示无结果。默认请求根目录；如果站点只开放特定子目录，需要管理员调整配置或自行扩展请求的 `dir` 参数。见[随机图文档](https://cfbed.sanyue.de/api/random.html)及[实现](https://github.com/MarSeventh/CloudFlare-ImgBed/blob/85636c5bc7393e80e0fe229a8f73538ad5c65ee4/functions/random/index.js)。
-
-<!-- TODO: 添加随机图快捷指令截图。 -->
-![TODO：获取随机图链接的快捷指令](images/random-shortcut.png)
 
 ## 接口与响应核对
 
@@ -219,7 +208,6 @@ python3 "$HOME/bin/imgbed/upload.py" random
 - 随机图文档正文提到 `data.url`，但其示例和源码实际是顶层 `{ "url": ... }`。本脚本选择 `form=text`，不猜测 JSON 包装层。
 - “最近”依赖服务器索引。当前[索引实现](https://github.com/MarSeventh/CloudFlare-ImgBed/blob/85636c5bc7393e80e0fe229a8f73538ad5c65ee4/functions/utils/indexManager.js)按时间倒序组织文件，脚本还会对返回记录按 `metadata.TimeStamp` 排序并截取 25 条。但索引延迟、缺失时间戳以及 `isIndexedResponse=false` 的回退路径可能影响分页、递归和排序，不能保证总是全站最新 25 条。
 - 旧部署可能缺少 `publicUrl` 或忽略 `responseFormat=object`，脚本兼容常见的单元素数组。其他返回结构会报错，需按实际部署核对；外层登录网关、额外鉴权和渠道可用性未实测。
-- 截图都是明确标记的 TODO 占位，`images/.gitkeep` 仅保留目录；应在目标 Mac 实测、去除个人信息后补图。
 
 ## 常见问题
 
